@@ -1,5 +1,5 @@
 import {users } from "../data/users.js";
-
+import { deleteUserService } from "../services/user.service.js";
 
 // ✅ GET all users
 export const getUsers = (req, res) => {
@@ -10,37 +10,44 @@ export const getUsers = (req, res) => {
 };
 
 // create users
-export const createUser = (req,res)=>{
-    try{
-        const {name,email } =req.body;
+import { userDTO } from "../dtos/user.dto.js";   // add this import
 
-        //VALIDATION
-        if(!name || !email){
-            return res.status(400).json({
-                success: false,
-                message: "Name and email are required"
-            });
-        }
-        const newUser = {
-            id: Date.now().toString(),
-            name,
-            email
-        };
+// create users
+export const createUser = (req, res) => {
+  try {
 
-        users.push(newUser);
+    // Use DTO instead of req.body directly
+    const { name, email } = userDTO(req.body);
 
-        res.status(201).json({
-            success:true,
-            data:newUser
-        });
+    // VALIDATION
+    if (!name || !email) {
+      return res.status(400).json({
+        success: false,
+        message: "Name and email are required"
+      });
     }
-    catch(error){
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-    }
+
+    const newUser = {
+      id: Date.now().toString(),
+      name,
+      email
+    };
+
+    users.push(newUser);
+
+    return res.status(201).json({
+      success: true,
+      data: newUser
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
 };
+
 
 // ✅ UPDATE user (PUT)
 export const updateUser = (req, res) => {
@@ -124,26 +131,22 @@ export const deleteUser = (req, res) => {
   try {
     const { id } = req.params;
 
-    // Find index of user
-    const userIndex = users.findIndex((u) => u.id === id);
+    const isDeleted = deleteUserService(id);
 
-    if (userIndex === -1) {
+    if (!isDeleted) {
       return res.status(404).json({
         success: false,
         message: "User not found",
       });
     }
 
-    // Remove user
-    const deletedUser = users.splice(userIndex, 1);
-
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "User deleted successfully",
-      data: deletedUser[0],
     });
+
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
